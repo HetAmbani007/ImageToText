@@ -87,12 +87,12 @@ export default function Home() {
     setStatus("Preparing OCR engine...");
     let worker: Awaited<ReturnType<typeof createWorker>> | undefined;
     try {
-      worker = await createWorker("eng", 1, {
+      worker = await createWorker("eng+guj", 1, {
         logger: (message) => {
           if (message.status === "recognizing text") {
             setStatus(`Reading image... ${Math.round(message.progress * 100)}%`);
           } else if (message.status === "loading language traineddata") {
-            setStatus("Loading English OCR model...");
+            setStatus("Loading English and Gujarati OCR models...");
           }
         }
       });
@@ -134,7 +134,7 @@ export default function Home() {
             <div className="panel-heading"><div><small>STEP 01</small><h2>{mode === "upload" ? "Choose an image" : "Capture an image"}</h2></div>{file && <button className="text-button" onClick={clear}>Start over</button>}</div>
             {mode === "upload" ? <div className={`dropzone ${preview ? "has-preview" : ""}`} onClick={() => inputRef.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); chooseFile(event.dataTransfer.files[0]); }}>
               {preview ? <img src={preview} alt="Selected image preview" /> : <><span className="upload-circle"><Icon name="upload" /></span><strong>Drop your image here</strong><span>or <u>browse files</u></span><small>PNG, JPG or WEBP · up to 10 MB</small></>}
-              <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={onUpload} />
+              <input ref={inputRef} type="file" accept="image/*" onChange={onUpload} />
             </div> : <div className="camera-box">{!preview && <video ref={videoRef} playsInline muted aria-label="Camera preview" />}{preview && <img src={preview} alt="Captured image preview" />} {!preview && <div className="camera-guide" />}<button className="capture-button" onClick={capture} aria-label="Capture image"><span /></button></div>}
             {file && <button className="primary" onClick={extract} disabled={loading}>{loading ? <><span className="spinner" /> Extracting text...</> : <><Icon name="scan" /> Extract text</>}</button>}
             {status && <div className="status"><span />{status}</div>}
