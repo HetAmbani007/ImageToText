@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { createWorker } from "tesseract.js";
 
 type Mode = "upload" | "camera";
 
@@ -83,19 +84,27 @@ export default function Home() {
     if (!file) return;
     setLoading(true);
     setError("");
-    setStatus("Reading image...");
-    const body = new FormData();
-    body.append("image", file);
+    setStatus("Preparing OCR engine...");
+    let worker: Awaited<ReturnType<typeof createWorker>> | undefined;
     try {
-      const response = await fetch("/api/extract", { method: "POST", body });
-      const result = (await response.json()) as { text?: string; error?: string };
-      if (!response.ok) throw new Error(result.error || "Could not read this image.");
-      setText(result.text?.trim() || "No text was found. Try a sharper, better-lit image.");
+      worker = await createWorker("eng", 1, {
+        logger: (message) => {
+          if (message.status === "recognizing text") {
+            setStatus(`Reading image... ${Math.round(message.progress * 100)}%`);
+          } else if (message.status === "loading language traineddata") {
+            setStatus("Loading English OCR model...");
+          }
+        }
+      });
+      const result = await worker.recognize(file);
+      const extractedText = result.data.text.trim();
+      setText(extractedText || "No text was found. Try a sharper, better-lit image.");
       setStatus("Scan complete");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Something went wrong while scanning.");
       setStatus("");
     } finally {
+      await worker?.terminate();
       setLoading(false);
     }
   };
